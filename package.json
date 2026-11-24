@@ -1,0 +1,32 @@
+{
+  "name": "@wharfedale/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Wharfedale: keys, addresses, RPC/Esplora client, confidential transactions, issuance, Simplicity contract spends",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.json && node --test 'build/test/unit/**/*.test.js'",
+    "test:e2e": "tsc -p tsconfig.json && node --test 'build/test/e2e/**/*.test.js'"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.3.0",
+    "@vulpemventures/secp256k1-zkp": "3.2.1",
+    "liquidjs-lib": "6.0.2-liquid.38",
+    "tiny-secp256k1": "2.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.0",
+    "typescript": "5.9.3"
+  }
+}
