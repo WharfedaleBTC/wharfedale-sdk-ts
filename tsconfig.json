@@ -10,7 +10,16 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "outDir": "build",
-    "rootDir": "."
+    "rootDir": ".",
+    "paths": {
+      "@wharfedale/sdk": [
+        "./src/index.ts"
+      ]
+    }
   },
-  "include": ["src", "test"]
+  "include": [
+    "src",
+    "test",
+    "examples"
+  ]
 }

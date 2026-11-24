@@ -28,5 +28,11 @@
   "devDependencies": {
     "@types/node": "22.15.0",
     "typescript": "5.9.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   }
 }
