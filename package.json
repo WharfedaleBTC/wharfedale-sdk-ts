@@ -20,10 +20,12 @@
     "test:e2e": "tsc -p tsconfig.json && node --test 'build/test/e2e/**/*.test.js'"
   },
   "dependencies": {
-    "@noble/hashes": "2.3.0",
+    "@bitcoinerlab/secp256k1": "2.0.0",
+    "@noble/hashes": "2.4.0",
+    "@scure/bip32": "2.4.0",
+    "@scure/bip39": "2.4.0",
     "@vulpemventures/secp256k1-zkp": "3.2.1",
-    "liquidjs-lib": "6.0.2-liquid.38",
-    "tiny-secp256k1": "2.2.4"
+    "liquidjs-lib": "6.0.2-liquid.38"
   },
   "devDependencies": {
     "@types/node": "22.15.0",

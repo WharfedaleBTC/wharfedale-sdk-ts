@@ -40,3 +40,32 @@ test('sig_all_hash matches rust-simplicity', () => {
     assert.equal(hex(sigAllHash(tx, prevouts, v.ix, fromHex(v.cmr), v.genesis_hash)), v.sig_all_hash, v.name);
   }
 });
+
+test('recovery phrases', async () => {
+  const { DERIVATION_PATH } = await import('../../src/index.js');
+  for (const v of vectors.mnemonics) {
+    assert.equal(v.path, DERIVATION_PATH);
+    const k = Key.fromMnemonic(v.phrase);
+    assert.equal(hex(k.secretBytes()), v.secret);
+    assert.equal(hex(k.xOnlyPublicKey()), v.xonly_public_key);
+    assert.equal(k.address(), v.address);
+  }
+  // BIP86 reference vector, coin type 0.
+  const bip86 = Key.fromMnemonic('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about', "m/86'/0'/0'/0/0");
+  assert.equal(hex(bip86.xOnlyPublicKey()), 'cc8a4bc64d897bddc5fbc2f670f7a8ba0b386779106cf1223c6fc5d7cd6fc115');
+  assert.throws(() => Key.fromMnemonic('abandon '.repeat(12).trim()));
+});
+
+test('asset metadata (named issuance)', async () => {
+  const { encodeMetadata, metadataContractHash, metadataScript } = await import('../../src/index.js');
+  const liquid = await import('liquidjs-lib');
+  for (const v of vectors.metadata) {
+    const m = JSON.parse(v.metadata);
+    assert.equal(encodeMetadata(m).toString('utf8'), v.metadata);
+    assert.equal(hex(metadataContractHash(m)), v.contract_hash);
+    assert.equal(hex(metadataScript(m)), v.script);
+    const entropy = liquid.issuance.generateEntropy({ txHash: fromHex(v.prevout_txid).reverse(), vout: v.prevout_vout }, metadataContractHash(m));
+    assert.equal(hex(Buffer.from(liquid.issuance.calculateAsset(entropy)).reverse()), v.asset);
+    assert.equal(hex(Buffer.from(liquid.issuance.calculateReissuanceToken(entropy, false)).reverse()), v.token);
+  }
+});

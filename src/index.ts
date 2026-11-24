@@ -10,6 +10,7 @@
 export * from './bytes.js';
 export * from './network.js';
 export * from './keys.js';
+export * from './metadata.js';
 export * from './client.js';
 export * from './wallet.js';
 export * from './simplicity.js';

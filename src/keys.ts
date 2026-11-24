@@ -1,9 +1,33 @@
 // Wallet keys: one secret → key-path taproot output, blinding key, `wfc1…`/`wf1…` addresses.
-import { randomBytes } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { generateMnemonic as bip39Generate, mnemonicToSeedSync, validateMnemonic } from '@scure/bip39';
+import { wordlist } from '@scure/bip39/wordlists/english.js';
+import { HDKey } from '@scure/bip32';
 import { ecc } from './ecc.js';
-import { fromHex, hex, sha256, taggedHash } from './bytes.js';
+import { fromHex, hex, randomBytes, sha256, taggedHash } from './bytes.js';
 import { addressOf } from './network.js';
+
+/** BIP32 path of the wallet key under a recovery phrase: BIP86 (taproot), coin type 1. */
+export const DERIVATION_PATH = "m/86'/1'/0'/0/0";
+
+/** A new BIP39 recovery phrase (English), 12 or 24 words. */
+export function generateMnemonic(words: 12 | 24 = 12): string {
+  return bip39Generate(wordlist, words === 24 ? 256 : 128);
+}
+
+const normalizePhrase = (p: string): string => p.trim().split(/\s+/).join(' ').toLowerCase();
+
+/** Whether `phrase` is a valid BIP39 English phrase (checksum included). */
+export function isValidMnemonic(phrase: string): boolean {
+  return validateMnemonic(normalizePhrase(phrase), wordlist);
+}
+
+// Key files use `fs` only under Node (no static import: browser bundles stay clean).
+function nodeFs(): { readFileSync(p: string, e: 'utf8'): string; writeFileSync(p: string, d: string): void } {
+  const get = (globalThis as { process?: { getBuiltinModule?: (m: string) => unknown } }).process?.getBuiltinModule;
+  const fs = get?.('node:fs');
+  if (!fs) throw new Error('key files need Node.js ≥ 22.3');
+  return fs as ReturnType<typeof nodeFs>;
+}
 
 export class Key {
   readonly #secret: Buffer;
@@ -13,8 +37,29 @@ export class Key {
     this.#secret = secret;
   }
 
+  /** Parses key-file JSON (`{"secret": "<64 hex>"}`); works in browsers. */
+  static fromJson(json: string): Key {
+    const v = JSON.parse(json) as { secret?: string };
+    if (typeof v.secret !== 'string') throw new Error('key file has no "secret"');
+    return Key.fromSecret(v.secret);
+  }
+
+  /** Key-file JSON for this key. */
+  toJson(): string {
+    return JSON.stringify({ secret: hex(this.#secret) }, null, 2);
+  }
+
   static fromSecret(secret: Uint8Array | string): Key {
     return new Key(typeof secret === 'string' ? fromHex(secret) : Buffer.from(secret));
+  }
+
+  /** The key of a BIP39 recovery phrase (checksum verified, no passphrase) at `path`. */
+  static fromMnemonic(phrase: string, path = DERIVATION_PATH): Key {
+    const p = normalizePhrase(phrase);
+    if (!validateMnemonic(p, wordlist)) throw new Error('invalid recovery phrase');
+    const child = HDKey.fromMasterSeed(mnemonicToSeedSync(p)).derive(path);
+    if (!child.privateKey) throw new Error('derivation failed');
+    return new Key(Buffer.from(child.privateKey));
   }
 
   static generate(): Key {
@@ -24,15 +69,15 @@ export class Key {
     }
   }
 
-  /** Key file `{"secret": "<64 hex>"}` (same format as node keys and the Rust SDK). */
+  /** Key file `{"secret": "<64 hex>"}` (same format as node keys and the Rust SDK). Node only. */
   static load(path: string): Key {
-    const v = JSON.parse(readFileSync(path, 'utf8')) as { secret?: string };
+    const v = JSON.parse(nodeFs().readFileSync(path, 'utf8')) as { secret?: string };
     if (typeof v.secret !== 'string') throw new Error('key file has no "secret"');
     return Key.fromSecret(v.secret);
   }
 
   save(path: string): void {
-    writeFileSync(path, JSON.stringify({ secret: hex(this.#secret) }, null, 2));
+    nodeFs().writeFileSync(path, JSON.stringify({ secret: hex(this.#secret) }, null, 2));
   }
 
   secretBytes(): Buffer {

@@ -9,6 +9,13 @@ export const fromHex = (h: string): Buffer => {
 /** Display order (reversed) ⇄ internal order for txids, asset ids, block hashes. */
 export const reversed = (b: Uint8Array): Buffer => Buffer.from(b).reverse();
 
+/** Cryptographically secure random bytes (Web Crypto: browsers and Node ≥ 19). */
+export function randomBytes(n: number): Buffer {
+  const b = Buffer.alloc(n);
+  globalThis.crypto.getRandomValues(b);
+  return b;
+}
+
 export const sha256 = (...parts: Uint8Array[]): Buffer => Buffer.from(nobleSha256(Buffer.concat(parts)));
 
 /** BIP340 tagged hash: SHA-256(SHA-256(tag) ‖ SHA-256(tag) ‖ data). */

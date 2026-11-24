@@ -1,6 +1,6 @@
-// Elliptic-curve backends: tiny-secp256k1 (Schnorr, taproot tweaks) and secp256k1-zkp (WASM:
-// commitments, range and surjection proofs), loaded once.
-import * as ecc from 'tiny-secp256k1';
+// Elliptic-curve backends: @bitcoinerlab/secp256k1 (pure JS, tiny-secp256k1 interface: Schnorr,
+// taproot tweaks) and secp256k1-zkp (WASM: commitments, range and surjection proofs, loaded once).
+import * as ecc from '@bitcoinerlab/secp256k1';
 import * as zkpModule from '@vulpemventures/secp256k1-zkp';
 import type { Secp256k1ZKP } from '@vulpemventures/secp256k1-zkp';
 import * as liquid from 'liquidjs-lib';
@@ -29,4 +29,3 @@ export async function confidential(): Promise<liquid.confidential.Confidential> 
   return new liquid.confidential.Confidential((await zkp()) as never);
 }
 
-export const bip341 = liquid.bip341.BIP341Factory(ecc as never);

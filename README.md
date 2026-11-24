@@ -80,8 +80,6 @@ const client = new Client(process.env.WHARFEDALE_RPC ?? 'http://127.0.0.1:18443'
 const info = await client.chainInfo();
 console.log(`${info.chain} at height ${info.blocks}, fee asset ${info.feeAsset}`);
 
-await client.waitForHeight(info.blocks + 1);
-
 const tip = await client.restText('blocks/tip/hash');
 const block = await client.rest<{ tx_count: number }>(`block/${tip}`);
 console.log(`tip has ${block.tx_count} transactions`);
@@ -328,6 +326,7 @@ const owner = Key.load('bob.json');
 const vault = new SignatureContract(JSON.parse(readFileSync('timelock.artifact.json', 'utf8')) as SignatureArtifact);
 const after = Number(process.env.AFTER ?? 100); // the AFTER argument the artifact was compiled with
 
+// Blocks come only with transactions: the chain reaches `after` as other transactions confirm.
 await client.waitForHeight(after); // lock time must also be below the next block's height
 const txid = await vault.spend(client, { to: owner.address(), amount: 10_000, lockTime: after, signers: { SIG: owner } });
 console.log(txid);
@@ -386,9 +385,8 @@ Errors are thrown as `Error`. Node rejections are `RpcError` (`method`, message 
 
 ## Running the examples
 
-1. Start a local network from the node repository:
-   `docker compose -f docker/compose.yml up -d --build`. RPC is on `http://127.0.0.1:18443`
-   (node0) to `:18446`.
+1. Start a local network from the node repository: `make run`. RPC is on
+   `http://127.0.0.1:18443` (node0) to `:18446`, and `:18447` (a full node).
 2. Copy out the funded faucet key:
    `docker compose -f docker/compose.yml cp node0:/net/faucet.json .`.
 3. Build: `npm run build`.

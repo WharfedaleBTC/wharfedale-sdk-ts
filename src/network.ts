@@ -53,11 +53,15 @@ export function destination(to: string): Destination {
       throw invalid();
     }
   }
+  let script: Buffer;
   try {
-    return { script: fromHex(to) };
+    script = fromHex(to);
   } catch {
     throw invalid();
   }
+  // An empty script marks a fee output: the amount would go to the block's proposer as fees.
+  if (script.length === 0) throw invalid();
+  return { script };
 }
 
 /** Address of a segwit output script: `wf1…`, or `wfc1…` with a blinding public key. */

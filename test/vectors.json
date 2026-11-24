@@ -85,6 +85,51 @@
       "xonly_public_key": "ad1d02fb804c18df3434bb8e259694120512c64136d877390d9eb46707fddec2"
     }
   ],
+  "metadata": [
+    {
+      "asset": "6ae5dd40c05c9c611b11a5f71be6c2c1d6ac34e4a6427c261ef5d833c1c618b1",
+      "contract_hash": "ae2d10c32b071ddd578ee2f9aab829d11c43d93a0f18300fe5b41d697576df05",
+      "metadata": "{\"name\":\"Demo Points\",\"precision\":2,\"ticker\":\"DPT\"}",
+      "prevout_txid": "0505050505050505050505050505050505050505050505050505050505050505",
+      "prevout_vout": 1,
+      "script": "6a0457464131337b226e616d65223a2244656d6f20506f696e7473222c22707265636973696f6e223a322c227469636b6572223a22445054227d",
+      "token": "9795144f5e6fc5227b050ca1d381158fcc66936ffc4a8a7eaa6e015dc0163a7f"
+    },
+    {
+      "asset": "0e18c441564c7c4a8cabb09ba57aaf4465ced5f0455ec6f18ecedb2141e1382f",
+      "contract_hash": "9c66db85dab69e2dd37b8d04e82e6d06e05609940ae2f7e8e6e1fc4477b93aaf",
+      "metadata": "{\"name\":\"Harbour Tickets\",\"precision\":0,\"ticker\":\"HBT\"}",
+      "prevout_txid": "0505050505050505050505050505050505050505050505050505050505050505",
+      "prevout_vout": 1,
+      "script": "6a0457464131377b226e616d65223a22486172626f7572205469636b657473222c22707265636973696f6e223a302c227469636b6572223a22484254227d",
+      "token": "176e5e25f1498d5f1eb6d75d221c78cc8503d5ebf6193b7cab919c9291594665"
+    },
+    {
+      "asset": "835d1e664ee0d7d3ad951ff6cdcfec920839d9fc026b4eb1889d5cbbf34da50e",
+      "contract_hash": "9320a72454fb0d63cc36279fbeaffac2978820ad6abad9bc8f69978033e8e0c1",
+      "metadata": "{\"name\":\"Grüße ✓\",\"precision\":8,\"ticker\":\"GR8\"}",
+      "prevout_txid": "0505050505050505050505050505050505050505050505050505050505050505",
+      "prevout_vout": 1,
+      "script": "6a0457464131337b226e616d65223a224772c3bcc39f6520e29c93222c22707265636973696f6e223a382c227469636b6572223a22475238227d",
+      "token": "86bd5cc7372d55b15f59553b6095438b0da5e5ed95da329844976b37810412a9"
+    }
+  ],
+  "mnemonics": [
+    {
+      "address": "wfc1pqf8uvuwk0dwl0ylwpqnps8r4nfmn7ggspekejs2a5w2ave4wg83g8hfw74wnrjej6vx0pcr79dspm6vfc2cdnv4ftp8rzdhgyuk7e5xwurqf9ncrxwz5",
+      "path": "m/86'/1'/0'/0/0",
+      "phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      "secret": "dff1c8c2c016a572914b4c5adb8791d62b4768ae9d0a61be8ab94cf5038d7d90",
+      "xonly_public_key": "55355ca83c973f1d97ce0e3843c85d78905af16b4dc531bc488e57212d230116"
+    },
+    {
+      "address": "wfc1pq07khpcvqj9urdk6pm9nqs4sy8dy9mv62ytxed2trpl3hc95ws3tn305n4fftenfakd0rzshy9ln80ef3ultnmffwpdaqddk2qhzpa34f7cy8jjzqk0x",
+      "path": "m/86'/1'/0'/0/0",
+      "phrase": "legal winner thank year wave sausage worth useful legal winner thank yellow",
+      "secret": "d7912ddb59d5c3b64498c11ea15c23d657c6cad81b44177ea783c1678dae2a4f",
+      "xonly_public_key": "9ff08732287dca062343cf43f763ea84dcd40348a1dd6f90956beb0c59c33b94"
+    }
+  ],
   "sig_all_hash": [
     {
       "cmr": "0b771386a2ee6f0cfb296b0656a98431b77be650ea1eb0f7beb05894fe9bba87",

@@ -47,6 +47,16 @@ test('wallet, issuance and contracts against a live network', { skip: !rpc || !f
   assert.equal(b.get(issued.asset), 1_250);
   assert.equal(b.get(issued.token), 1);
 
+  // A named issuance: the node verifies the on-chain metadata and serves it.
+  const named = await alice.issue(5_000, 0, 1_000, { name: 'Harbour Tickets', ticker: 'HBT', precision: 0 });
+  await client.waitForTx(named.txid);
+  let rec: { name?: string; ticker?: string; precision?: number } | null = null;
+  for (let i = 0; i < 120 && !rec; i++) {
+    rec = await client.rest<{ name?: string; ticker?: string; precision?: number }>(`asset/${named.asset}`).catch(() => null);
+    if (!rec) await new Promise((r) => setTimeout(r, 250));
+  }
+  assert.deepEqual([rec?.name, rec?.ticker, rec?.precision], ['Harbour Tickets', 'HBT', 0]);
+
   // A p2pk contract (artifact compiled by the Rust SDK; owner = vector key 1).
   const p2pk = new SignatureContract(vectors.contracts[0].artifact);
   const owner = Key.fromSecret(vectors.keys[0].secret);

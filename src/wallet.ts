@@ -1,13 +1,13 @@
 // Single-key wallet: coin discovery (unblinding), confidential payments, issuance, reissuance.
 // Every `build*` method returns a blinded, signed transaction; the plain method also sends it.
-import { randomBytes } from 'node:crypto';
 import * as liquid from 'liquidjs-lib';
 import { Client, ChainInfo } from './client.js';
 import { confidential, ecc, zkp } from './ecc.js';
-import { amount as checkAmount, fromHex, hex, reversed } from './bytes.js';
+import { amount as checkAmount, fromHex, hex, randomBytes, reversed } from './bytes.js';
 import { destination } from './network.js';
 import { Key } from './keys.js';
 import type { TxOutLike } from './simplicity.js';
+import { AssetMetadata, metadataContractHash, metadataScript, validateMetadata } from './metadata.js';
 
 /** Default fee in fee-asset units (the node's minimum relay rate is 100 per 1000 vbytes). */
 export const DEFAULT_FEE = 1_000;
@@ -232,31 +232,42 @@ export class Wallet {
 
   /** Issues `amount` of a new asset and `tokens` reissuance tokens (explicit amounts), paid
    *  confidentially to this key. */
-  async buildIssue(amount: number, tokens = 1, fee = DEFAULT_FEE): Promise<{ tx: liquid.Transaction; asset: string; token: string }> {
+  async buildIssue(
+    amount: number,
+    tokens = 1,
+    fee = DEFAULT_FEE,
+    metadata?: AssetMetadata,
+  ): Promise<{ tx: liquid.Transaction; asset: string; token: string }> {
+    if (metadata) validateMetadata(metadata);
+    // New issuance: the contract hash is 0, or SHA-256 of the on-chain metadata.
+    const contract = metadata ? metadataContractHash(metadata) : ZERO32;
     const info = await this.client.chainInfo();
     const { taken: inputs, total } = select(await this.coins(), info.feeAsset, fee + 1);
     const tx = unsignedTx(inputs);
     tx.ins[0]!.issuance = {
       assetBlindingNonce: ZERO32,
-      assetEntropy: ZERO32, // contract hash 0
+      assetEntropy: contract,
       assetAmount: explicitValue(amount),
       tokenAmount: tokens > 0 ? explicitValue(tokens) : Buffer.from([0]),
     };
-    const entropy = liquid.issuance.generateEntropy({ txHash: tx.ins[0]!.hash, vout: tx.ins[0]!.index }, ZERO32);
+    const entropy = liquid.issuance.generateEntropy({ txHash: tx.ins[0]!.hash, vout: tx.ins[0]!.index }, contract);
     const asset = hex(reversed(liquid.issuance.calculateAsset(entropy)));
     const token = hex(reversed(liquid.issuance.calculateReissuanceToken(entropy, false)));
     const own = this.key.blindingPublicKey();
     const me = this.key.scriptPubkey();
     const specs: OutputSpec[] = [{ script: me, asset, value: amount, blindingKey: own }];
     if (tokens > 0) specs.push({ script: me, asset: token, value: tokens, blindingKey: own });
-    specs.push({ script: me, asset: info.feeAsset, value: total - fee, blindingKey: own }, { script: Buffer.alloc(0), asset: info.feeAsset, value: fee });
+    specs.push({ script: me, asset: info.feeAsset, value: total - fee, blindingKey: own });
+    if (metadata) specs.push({ script: metadataScript(metadata), asset: info.feeAsset, value: 0 });
+    specs.push({ script: Buffer.alloc(0), asset: info.feeAsset, value: fee });
     const extra = [explicitOpening(asset, amount)];
     if (tokens > 0) extra.push(explicitOpening(token, tokens));
     return { tx: await this.#finish(info, tx, specs, inputs, [extra]), asset, token };
   }
 
-  async issue(amount: number, tokens = 1, fee = DEFAULT_FEE): Promise<Issued> {
-    const { tx, asset, token } = await this.buildIssue(amount, tokens, fee);
+  /** Issues `amount` of a new asset (and `tokens` reissuance tokens); `metadata` names it on chain. */
+  async issue(amount: number, tokens = 1, fee = DEFAULT_FEE, metadata?: AssetMetadata): Promise<Issued> {
+    const { tx, asset, token } = await this.buildIssue(amount, tokens, fee, metadata);
     return { txid: await this.client.sendTransaction(tx), asset, token };
   }
 
