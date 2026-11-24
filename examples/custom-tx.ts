@@ -6,7 +6,7 @@ const client = new Client(process.env.WHARFEDALE_RPC ?? 'http://127.0.0.1:18443'
 const key = Key.load('alice.json');
 const wallet = new Wallet(client, key);
 const info = await client.chainInfo();
-const fee = 1_500;
+const fee = 150;
 
 const bob = destination(Key.load('bob.json').address()); // wfc1: script + blinding key
 const carol = destination(Key.load('carol.json').explicitAddress()); // wf1: script only

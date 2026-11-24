@@ -9,8 +9,12 @@ import { Key } from './keys.js';
 import type { TxOutLike } from './simplicity.js';
 import { AssetMetadata, metadataContractHash, metadataScript, validateMetadata } from './metadata.js';
 
-/** Default fee in fee-asset units (the node's minimum relay rate is 100 per 1000 vbytes). */
-export const DEFAULT_FEE = 1_000;
+/**
+ * Default fee in fee-asset units: 100 (100 sats when the fee asset is bitcoin-like). Clears the
+ * node's default minimum relay rate (10 units per 1 000 vbytes) for transactions up to
+ * 10 000 vbytes; a confidential payment is about 1 500–2 500, an issuance about 3 900.
+ */
+export const DEFAULT_FEE = 100;
 
 const ZERO32 = Buffer.alloc(32);
 const NULL_NONCE = Buffer.from([0]);

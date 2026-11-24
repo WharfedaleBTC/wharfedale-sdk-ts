@@ -5,8 +5,8 @@ import { Client, Key, Wallet } from '@wharfedale/sdk';
 const client = new Client(process.env.WHARFEDALE_RPC ?? 'http://127.0.0.1:18443');
 const issuer = new Wallet(client, Key.load('alice.json'));
 
-// 1 000 000 units and 1 reissuance token (0 tokens = fixed supply). Fee 1 000.
-const issued = await issuer.issue(1_000_000, 1, 1_000);
+// 1 000 000 units and 1 reissuance token (0 tokens = fixed supply). Fee 100.
+const issued = await issuer.issue(1_000_000, 1, 100);
 await client.waitForTx(issued.txid);
 console.log(`asset ${issued.asset}, reissuance token ${issued.token}`);
 

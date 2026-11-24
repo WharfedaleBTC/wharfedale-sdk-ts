@@ -128,13 +128,13 @@ const client = new Client(process.env.WHARFEDALE_RPC ?? 'http://127.0.0.1:18443'
 const alice = new Wallet(client, Key.load('alice.json'));
 const bob = Key.load('bob.json');
 
-// To a wfc1 address: amount and asset are blinded to Bob. Fee: 1 000 units by default.
+// To a wfc1 address: amount and asset are blinded to Bob. Fee: 100 units by default.
 const txid = await alice.send(bob.address(), 250_000);
 console.log(`${txid} confirmed at ${await client.waitForTx(txid)}`);
 
 // An issued asset, explicitly (wf1 address), with a larger fee.
 const asset = process.env.ASSET ?? '6e8da0e6433b5189d819180caeab100f1f8a88e58feabcbcaa2a357d2d28f0f6';
-await alice.send(bob.explicitAddress(), 10, { asset, fee: 2_000 });
+await alice.send(bob.explicitAddress(), 10, { asset, fee: 500 });
 ```
 
 ## Build, dry-run, broadcast
@@ -175,8 +175,8 @@ import { Client, Key, Wallet } from '@wharfedale/sdk';
 const client = new Client(process.env.WHARFEDALE_RPC ?? 'http://127.0.0.1:18443');
 const issuer = new Wallet(client, Key.load('alice.json'));
 
-// 1 000 000 units and 1 reissuance token (0 tokens = fixed supply). Fee 1 000.
-const issued = await issuer.issue(1_000_000, 1, 1_000);
+// 1 000 000 units and 1 reissuance token (0 tokens = fixed supply). Fee 100.
+const issued = await issuer.issue(1_000_000, 1, 100);
 await client.waitForTx(issued.txid);
 console.log(`asset ${issued.asset}, reissuance token ${issued.token}`);
 
@@ -209,7 +209,7 @@ const client = new Client(process.env.WHARFEDALE_RPC ?? 'http://127.0.0.1:18443'
 const key = Key.load('alice.json');
 const wallet = new Wallet(client, key);
 const info = await client.chainInfo();
-const fee = 1_500;
+const fee = 150;
 
 const bob = destination(Key.load('bob.json').address()); // wfc1: script + blinding key
 const carol = destination(Key.load('carol.json').explicitAddress()); // wf1: script only
@@ -236,7 +236,7 @@ Rules the node enforces (see the node docs, "Validation"):
 
 - Outputs are taproot, fee (empty script) or `OP_RETURN` (explicit only).
 - A transaction spending confidential coins needs at least one blinded output.
-- Fees are paid in the chain's fee asset (`chainInfo().feeAsset`). The minimum is 100 units per
+- Fees are paid in the chain's fee asset (`chainInfo().feeAsset`). The node's default minimum is 10 units per
   1 000 vbytes.
 
 ## Simplicity contracts
@@ -295,7 +295,7 @@ console.log('forged:', await client.testAccept(forged)); // "invalid: input 0: S
 const txid = await p2pk.spend(client, { to: alice.address(), amount: 60_000, signers: { SIG: bob } });
 await client.waitForTx(txid);
 const left = (await p2pk.coins(client)).reduce((sum, c) => sum + c.value, 0);
-console.log(`left in contract: ${left}`); // 100 000 − 60 000 − 1 000
+console.log(`left in contract: ${left}`); // 100 000 − 60 000 − 100
 ```
 
 Contracts with branches, or with witnesses other than signatures (hash locks, oracle data), need

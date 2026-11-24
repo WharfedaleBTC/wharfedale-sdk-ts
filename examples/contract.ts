@@ -24,4 +24,4 @@ console.log('forged:', await client.testAccept(forged)); // "invalid: input 0: S
 const txid = await p2pk.spend(client, { to: alice.address(), amount: 60_000, signers: { SIG: bob } });
 await client.waitForTx(txid);
 const left = (await p2pk.coins(client)).reduce((sum, c) => sum + c.value, 0);
-console.log(`left in contract: ${left}`); // 100 000 − 60 000 − 1 000
+console.log(`left in contract: ${left}`); // 100 000 − 60 000 − 100

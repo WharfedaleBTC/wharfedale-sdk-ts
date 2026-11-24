@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { Client, Key, Wallet, SignatureContract } from '../../src/index.js';
+import { Client, DEFAULT_FEE, Key, Wallet, SignatureContract } from '../../src/index.js';
 
 const rpc = process.env.WHARFEDALE_RPC;
 const faucetFile = process.env.WHARFEDALE_FAUCET;
@@ -23,7 +23,7 @@ test('wallet, issuance and contracts against a live network', { skip: !rpc || !f
   await other.waitForTx(fund);
   const pay = await alice.send(bob.key.address(), 500_000);
   await client.waitForTx(pay);
-  assert.equal((await alice.balances()).get(info.feeAsset), 2_000_000 - 500_000 - 1_000);
+  assert.equal((await alice.balances()).get(info.feeAsset), 2_000_000 - 500_000 - DEFAULT_FEE);
   assert.equal((await bob.balances()).get(info.feeAsset), 500_000);
   const onChain = await client.rest<{ vout: { valuecommitment?: string; value?: number }[] }>(`tx/${pay}`);
   assert.ok(onChain.vout[0]!.valuecommitment && onChain.vout[0]!.value === undefined, 'payment is confidential');
@@ -68,7 +68,7 @@ test('wallet, issuance and contracts against a live network', { skip: !rpc || !f
   const spent = await p2pk.spend(client, { to: alice.key.address(), amount: 50_000, signers: { SIG: owner } });
   await other.waitForTx(spent);
   const after = (await p2pk.coins(client)).reduce((s, c) => s + c.value, 0);
-  assert.equal(after, before + 100_000 - 50_000 - 1_000);
+  assert.equal(after, before + 100_000 - 50_000 - DEFAULT_FEE);
 
   // A timelock contract (AFTER = 5): lock time 4 is final but fails the program in the node;
   // lock time 5 spends.
