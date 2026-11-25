@@ -94,6 +94,7 @@ export function select(pool: Coin[], asset: string, amount: number): { taken: Co
     if (i < 0) throw new Error(`insufficient funds in asset ${asset}: have ${total}, need ${amount}`);
     const [c] = pool.splice(i, 1);
     total += c!.value;
+    if (!Number.isSafeInteger(total)) throw new Error('coin values exceed the safe integer range');
     taken.push(c!);
   }
   return { taken, total };
@@ -163,6 +164,12 @@ export function signKeyPath(tx: liquid.Transaction, prevouts: TxOutLike[], key: 
   });
 }
 
+/** Adds `amount` of `asset` to what a transaction needs; the sum must stay a safe integer. */
+export function addNeed(need: Map<string, number>, asset: string, amount: number): void {
+  const n = (need.get(asset) ?? 0) + checkAmount(amount);
+  need.set(asset, checkAmount(n, 'amount plus fee'));
+}
+
 /** An unsigned version-2 transaction spending `inputs` (final sequences). */
 export function unsignedTx(inputs: Coin[], sequence = 0xffffffff): liquid.Transaction {
   const tx = new liquid.Transaction();
@@ -205,8 +212,8 @@ export class Wallet {
     const asset = opts.asset ?? info.feeAsset;
     const dest = destination(to);
     const need = new Map<string, number>();
-    need.set(asset, (need.get(asset) ?? 0) + checkAmount(amount));
-    need.set(info.feeAsset, (need.get(info.feeAsset) ?? 0) + fee);
+    addNeed(need, asset, checkAmount(amount));
+    addNeed(need, info.feeAsset, fee);
 
     const pool = await this.coins();
     const inputs: Coin[] = [];
@@ -242,6 +249,9 @@ export class Wallet {
     fee = DEFAULT_FEE,
     metadata?: AssetMetadata,
   ): Promise<{ tx: liquid.Transaction; asset: string; token: string }> {
+    checkAmount(amount);
+    checkAmount(tokens, 'tokens');
+    checkAmount(fee + 1, 'fee');
     if (metadata) validateMetadata(metadata);
     // New issuance: the contract hash is 0, or SHA-256 of the on-chain metadata.
     const contract = metadata ? metadataContractHash(metadata) : ZERO32;
@@ -277,6 +287,8 @@ export class Wallet {
 
   /** Reissues `amount` of `asset` with a held reissuance token (returned to this key). */
   async buildReissue(asset: string, amount: number, fee = DEFAULT_FEE): Promise<liquid.Transaction> {
+    checkAmount(amount);
+    checkAmount(fee + 1, 'fee');
     const info = await this.client.chainInfo();
     const record = await this.client.asset(asset);
     const token = record.reissuanceToken;

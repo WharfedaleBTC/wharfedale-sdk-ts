@@ -39,12 +39,16 @@ export function destination(to: string): Destination {
   const lower = to.toLowerCase();
   if (lower.startsWith(`${WHARFEDALE.blech32}1`)) {
     // liquidjs-lib's `fromConfidential` only knows Liquid's prefixes: decode blech32 directly.
+    let r: ReturnType<typeof liquid.address.fromBlech32>;
     try {
-      const r = liquid.address.fromBlech32(to);
-      return { script: r.data, blindingKey: r.pubkey };
+      r = liquid.address.fromBlech32(to);
     } catch {
       throw invalid();
     }
+    // fromBlech32 accepts either checksum variant: require the canonical one (blech32 for
+    // version 0, blech32m above), as the node and the Rust SDK do.
+    if (addressOf(r.data, r.pubkey) !== lower) throw invalid();
+    return { script: r.data, blindingKey: r.pubkey };
   }
   if (lower.startsWith(`${WHARFEDALE.bech32}1`)) {
     try {

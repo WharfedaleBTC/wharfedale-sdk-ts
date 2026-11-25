@@ -85,8 +85,11 @@ export class Client {
     return this.call<number>('getblockcount');
   }
 
+  /** A confirmed or mempool transaction. Checked to hash to `txid`. */
   async transaction(txid: string): Promise<liquid.Transaction> {
-    return liquid.Transaction.fromHex(await this.call<string>('getrawtransaction', [txid]));
+    const tx = liquid.Transaction.fromHex(await this.call<string>('getrawtransaction', [txid]));
+    if (tx.getId() !== txid.toLowerCase()) throw new Error(`getrawtransaction ${txid}: the node returned transaction ${tx.getId()}`);
+    return tx;
   }
 
   /** Height of the block containing `txid`; `undefined` while unconfirmed. */

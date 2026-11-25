@@ -3,11 +3,11 @@
 // ({cmr, program, signatures}) is spent with witness = sig₁ ‖ sig₂ ‖ … over `sig_all_hash`.
 import * as liquid from 'liquidjs-lib';
 import { Client } from './client.js';
-import { fromHex } from './bytes.js';
+import { amount, fromHex } from './bytes.js';
 import { destination } from './network.js';
 import { Key } from './keys.js';
 import { contractAddress, contractControlBlock, contractScriptPubkey, sigAllHash } from './simplicity.js';
-import { addOutputs, coinsAt, Coin, DEFAULT_FEE, OutputSpec, select, unsignedTx } from './wallet.js';
+import { addNeed, addOutputs, coinsAt, Coin, DEFAULT_FEE, OutputSpec, select, unsignedTx } from './wallet.js';
 
 /** Output of `Contract::signature_artifact` (Rust SDK) / `wharfedale-wallet contract-artifact`. */
 export interface SignatureArtifact {
@@ -71,10 +71,14 @@ export class SignatureContract {
   async buildSpend(client: Client, spend: ContractSpend): Promise<liquid.Transaction> {
     const info = await client.chainInfo();
     const asset = spend.asset ?? info.feeAsset;
-    const fee = spend.fee ?? DEFAULT_FEE;
+    const fee = amount(spend.fee ?? DEFAULT_FEE, 'fee');
+    if (spend.lockTime !== undefined && !(Number.isInteger(spend.lockTime) && spend.lockTime >= 0 && spend.lockTime < 500_000_000)) {
+      throw new Error('lock time must be a block height below 500 000 000');
+    }
     const dest = destination(spend.to);
-    const need = new Map<string, number>([[asset, spend.amount]]);
-    need.set(info.feeAsset, (need.get(info.feeAsset) ?? 0) + fee);
+    const need = new Map<string, number>();
+    addNeed(need, asset, spend.amount);
+    addNeed(need, info.feeAsset, fee);
     const pool = await this.coins(client);
     const inputs: Coin[] = [];
     const specs: OutputSpec[] = [{ script: dest.script, asset, value: spend.amount, blindingKey: dest.blindingKey }];

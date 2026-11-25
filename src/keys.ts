@@ -22,11 +22,17 @@ export function isValidMnemonic(phrase: string): boolean {
 }
 
 // Key files use `fs` only under Node (no static import: browser bundles stay clean).
-function nodeFs(): { readFileSync(p: string, e: 'utf8'): string; writeFileSync(p: string, d: string): void } {
+interface NodeFs {
+  readFileSync(p: string, e: 'utf8'): string;
+  writeFileSync(p: string, d: string, o: { mode: number }): void;
+  chmodSync(p: string, mode: number): void;
+}
+
+function nodeFs(): NodeFs {
   const get = (globalThis as { process?: { getBuiltinModule?: (m: string) => unknown } }).process?.getBuiltinModule;
   const fs = get?.('node:fs');
   if (!fs) throw new Error('key files need Node.js ≥ 22.3');
-  return fs as ReturnType<typeof nodeFs>;
+  return fs as NodeFs;
 }
 
 export class Key {
@@ -76,8 +82,13 @@ export class Key {
     return Key.fromSecret(v.secret);
   }
 
+  /** Writes the key file readable by its owner only (mode 0600 on Unix, also when it exists). */
   save(path: string): void {
-    nodeFs().writeFileSync(path, JSON.stringify({ secret: hex(this.#secret) }, null, 2));
+    const fs = nodeFs();
+    // `mode` applies only to a new file: tighten an existing one before writing the secret.
+    fs.writeFileSync(path, '', { mode: 0o600 });
+    fs.chmodSync(path, 0o600);
+    fs.writeFileSync(path, this.toJson(), { mode: 0o600 });
   }
 
   secretBytes(): Buffer {
