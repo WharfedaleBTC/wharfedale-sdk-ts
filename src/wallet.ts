@@ -57,6 +57,7 @@ export interface OutputSpec {
  *  unblinded with `blindingKey`; those it can't open (or all, without one) are skipped. */
 export async function coinsAt(client: Client, script: Uint8Array, blindingKey?: Buffer): Promise<Coin[]> {
   const conf = await confidential();
+  const z = await zkp();
   const txs = new Map<string, liquid.Transaction>();
   const out: Coin[] = [];
   for (const u of await client.scriptUtxos(script)) {
@@ -75,6 +76,13 @@ export async function coinsAt(client: Client, script: Uint8Array, blindingKey?: 
     }
     if (!blindingKey) continue;
     try {
+      if (o.asset[0] === 1) {
+        // Explicit asset, blinded value (DAMP pays its wallet outputs so): the range proof's
+        // generator is the asset's unblinded generator, and the asset blinder is zero.
+        const v = unblindValueWithKey(conf, z, o, blindingKey);
+        out.push({ txid: u.txid, vout: u.vout, output, asset: hex(reversed(o.asset.subarray(1))), value: v.value, assetBlinder: ZERO32, valueBlinder: v.valueBlinder, confidential: true });
+        continue;
+      }
       const r = conf.unblindOutputWithKey(o, blindingKey);
       out.push({ txid: u.txid, vout: u.vout, output, asset: hex(reversed(r.asset)), value: Number(r.value), assetBlinder: r.assetBlindingFactor, valueBlinder: r.valueBlindingFactor, confidential: true });
     } catch {
@@ -82,6 +90,25 @@ export async function coinsAt(client: Client, script: Uint8Array, blindingKey?: 
     }
   }
   return out;
+}
+
+/**
+ * Opens a blinded value whose asset is explicit (`0x01 ‖ asset id`): rewinds the range proof
+ * with the nonce shared with `blindingKey` and the asset's unblinded generator.
+ */
+export function unblindValueWithKey(
+  conf: liquid.confidential.Confidential,
+  z: Awaited<ReturnType<typeof zkp>>,
+  o: { asset: Buffer; value: Buffer; nonce: Buffer; script: Buffer; rangeProof?: Buffer },
+  blindingKey: Buffer,
+): { value: number; valueBlinder: Buffer } {
+  if (o.asset[0] !== 1 || o.asset.length !== 33) throw new Error('not an explicit asset');
+  if (!o.rangeProof?.length) throw new Error('missing range proof');
+  const nonce = conf.nonceHash(o.nonce, blindingKey);
+  const generator = z.generator.generate(o.asset.subarray(1));
+  const r = z.rangeproof.rewind(o.rangeProof, o.value, generator, nonce, o.script);
+  if (!Buffer.from(z.pedersen.commitment(r.value, generator, r.blinder)).equals(o.value)) throw new Error('value commitment mismatch');
+  return { value: Number(r.value), valueBlinder: Buffer.from(r.blinder) };
 }
 
 /** Largest-first selection of `amount` of `asset` (removes what it takes from `pool`). */
